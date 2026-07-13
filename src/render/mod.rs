@@ -7,8 +7,11 @@ pub const CELL_SIZE: f32 = 30.0;
 pub const UI_STRIP: f32 = 50.0;
 pub const MARGIN: f32 = 20.0;
 
+pub const MENU_EXTRA: f32 = 40.0;
+
 pub const WINDOW_WIDTH: i32 = (BOARD_WIDTH as f32 * CELL_SIZE + MARGIN * 2.0) as i32;
-pub const WINDOW_HEIGHT: i32 = (BOARD_HEIGHT as f32 * CELL_SIZE + UI_STRIP + MARGIN * 2.0) as i32;
+pub const WINDOW_HEIGHT: i32 =
+    (BOARD_HEIGHT as f32 * CELL_SIZE + UI_STRIP + MARGIN * 2.0 + MENU_EXTRA) as i32;
 
 pub fn window_conf() -> Conf {
     Conf {
@@ -194,31 +197,58 @@ pub fn draw_playing(game: &Game, visuals: &VisualState, tick_alpha: f32, top_sco
     }
 }
 
-pub fn draw_start_menu(mode: GameMode, leaderboard: &Leaderboard) {
+pub fn draw_start_menu(
+    mode: GameMode,
+    leaderboard: &Leaderboard,
+    player_name: &str,
+    sound_enabled: bool,
+) {
     clear_background(Color::from_rgba(18, 18, 24, 255));
 
-    centered_text("SNAKE", 120.0, 56.0, Color::from_rgba(120, 230, 120, 255));
+    centered_text("SNAKE", 100.0, 56.0, Color::from_rgba(120, 230, 120, 255));
 
     let panel_w = 420.0;
-    let panel_h = 220.0;
+    let panel_h = 280.0;
     let panel_x = WINDOW_WIDTH as f32 / 2.0 - panel_w / 2.0;
-    draw_panel(panel_x, 160.0, panel_w, panel_h);
+    draw_panel(panel_x, 150.0, panel_w, panel_h);
+
+    centered_text("Enter your name:", 185.0, 20.0, LIGHTGRAY);
+
+    let display_name = if player_name.is_empty() {
+        "_".to_string()
+    } else {
+        player_name.to_string()
+    };
+    let cursor = if (get_time() as f32 * 2.0).sin() > 0.0 { "|" } else { "" };
+    centered_text(
+        &format!("{display_name}{cursor}"),
+        220.0,
+        28.0,
+        WHITE,
+    );
 
     centered_text(
         &format!("Mode: {}  [M] toggle", mode.label()),
-        210.0,
-        24.0,
+        260.0,
+        22.0,
         WHITE,
     );
     centered_text(
         &format!("Highscore: {}", leaderboard.top_score()),
-        250.0,
-        22.0,
+        290.0,
+        20.0,
         LIGHTGRAY,
     );
-    centered_text("[Enter] Start", 300.0, 26.0, WHITE);
-    centered_text("WASD / Arrows — Move", 340.0, 20.0, LIGHTGRAY);
-    centered_text("[P] Pause   [Q] Quit", 365.0, 20.0, LIGHTGRAY);
+    let sound_label = if sound_enabled { "On" } else { "Off" };
+    centered_text(
+        &format!("Sound: {sound_label}  [T] toggle"),
+        318.0,
+        20.0,
+        WHITE,
+    );
+    centered_text("[Enter] Start", 348.0, 24.0, WHITE);
+    centered_text("WASD / Arrows - Move", 378.0, 18.0, LIGHTGRAY);
+    centered_text("[P] Pause   [Q] Quit", 400.0, 18.0, LIGHTGRAY);
 }
 
 pub fn draw_countdown(seconds: f32) {
@@ -231,7 +261,13 @@ pub fn draw_countdown(seconds: f32) {
     centered_text(display, WINDOW_HEIGHT as f32 / 2.0, 72.0, WHITE);
 }
 
-pub fn draw_paused(game: &Game, visuals: &VisualState, tick_alpha: f32, top_score: u16) {
+pub fn draw_paused(
+    game: &Game,
+    visuals: &VisualState,
+    tick_alpha: f32,
+    top_score: u16,
+    sound_enabled: bool,
+) {
     draw_playing(game, visuals, tick_alpha, top_score);
     draw_rectangle(
         0.0,
@@ -240,50 +276,116 @@ pub fn draw_paused(game: &Game, visuals: &VisualState, tick_alpha: f32, top_scor
         WINDOW_HEIGHT as f32,
         Color::from_rgba(0, 0, 0, 140),
     );
-    centered_text("PAUSED", WINDOW_HEIGHT as f32 / 2.0 - 20.0, 48.0, WHITE);
+    centered_text("PAUSED", WINDOW_HEIGHT as f32 / 2.0 - 30.0, 48.0, WHITE);
+    let sound_label = if sound_enabled { "On" } else { "Off" };
+    centered_text(
+        &format!("Sound: {sound_label}  [T] toggle"),
+        WINDOW_HEIGHT as f32 / 2.0 + 20.0,
+        22.0,
+        LIGHTGRAY,
+    );
     centered_text(
         "[P] Resume",
-        WINDOW_HEIGHT as f32 / 2.0 + 30.0,
+        WINDOW_HEIGHT as f32 / 2.0 + 50.0,
         24.0,
         LIGHTGRAY,
+    );
+}
+
+fn draw_leaderboard_row(rank: usize, name: &str, score: u16, y: f32, panel_x: f32, panel_w: f32) {
+    let rank_text = format!("{rank}.");
+    let score_text = score.to_string();
+    let row_size = 20.0;
+
+    let rank_x = panel_x + 24.0;
+    let name_x = panel_x + 64.0;
+    let score_right = panel_x + panel_w - 24.0;
+
+    draw_text(&rank_text, rank_x, y, row_size, WHITE);
+    draw_text(name, name_x, y, row_size, WHITE);
+
+    let score_dims = measure_text(&score_text, None, row_size as u16, 1.0);
+    draw_text(
+        &score_text,
+        score_right - score_dims.width,
+        y,
+        row_size,
+        Color::from_rgba(120, 230, 120, 255),
     );
 }
 
 pub fn draw_game_over(game: &Game, leaderboard: &Leaderboard, is_new_record: bool) {
     clear_background(Color::from_rgba(18, 18, 24, 255));
 
-    centered_text("GAME OVER", 80.0, 48.0, WHITE);
-    centered_text(&format!("Final Score: {}", game.score), 130.0, 28.0, WHITE);
+    centered_text("GAME OVER", 52.0, 44.0, WHITE);
+    centered_text(
+        &format!("Final Score: {}", game.score),
+        98.0,
+        26.0,
+        WHITE,
+    );
 
+    let mut panel_top = 128.0;
     if is_new_record {
         centered_text(
             "New Highscore!",
-            170.0,
-            28.0,
+            128.0,
+            24.0,
             Color::from_rgba(255, 215, 0, 255),
         );
+        panel_top = 158.0;
     }
 
-    let panel_w = 360.0;
-    let panel_h = 160.0;
+    let panel_w = 400.0;
+    let panel_h = 188.0;
     let panel_x = WINDOW_WIDTH as f32 / 2.0 - panel_w / 2.0;
-    draw_panel(panel_x, 210.0, panel_w, panel_h);
+    draw_panel(panel_x, panel_top, panel_w, panel_h);
 
-    centered_text("Top Scores", 240.0, 22.0, LIGHTGRAY);
+    let header_y = panel_top + 28.0;
+    centered_text("TOP SCORES", header_y, 20.0, LIGHTGRAY);
+
+    // Column headers
+    let col_y = panel_top + 54.0;
+    let col_size = 16.0;
+    draw_text("#", panel_x + 28.0, col_y, col_size, Color::from_rgba(140, 140, 160, 255));
+    draw_text(
+        "NAME",
+        panel_x + 64.0,
+        col_y,
+        col_size,
+        Color::from_rgba(140, 140, 160, 255),
+    );
+    let score_label = "SCORE";
+    let score_label_dims = measure_text(score_label, None, col_size as u16, 1.0);
+    draw_text(
+        score_label,
+        panel_x + panel_w - 24.0 - score_label_dims.width,
+        col_y,
+        col_size,
+        Color::from_rgba(140, 140, 160, 255),
+    );
+
     let entries = leaderboard.entries();
+    let first_row_y = panel_top + 78.0;
+    let row_spacing = 26.0;
+
     if entries.is_empty() {
-        centered_text("No scores yet", 275.0, 20.0, WHITE);
+        centered_text("No scores yet", first_row_y + 20.0, 20.0, WHITE);
     } else {
         for (i, entry) in entries.iter().take(5).enumerate() {
-            let line = format!("{}. {}  ({})", i + 1, entry.score, entry.date);
-            centered_text(&line, 275.0 + i as f32 * 24.0, 20.0, WHITE);
+            draw_leaderboard_row(
+                i + 1,
+                &entry.name,
+                entry.score,
+                first_row_y + i as f32 * row_spacing,
+                panel_x,
+                panel_w,
+            );
         }
     }
 
-    centered_text(
-        "[Enter] Play Again    [Q] Quit",
-        WINDOW_HEIGHT as f32 - 40.0,
-        22.0,
-        LIGHTGRAY,
-    );
+    // Footer controls — kept below the panel to avoid overlap.
+    let footer_y = panel_top + panel_h + 18.0;
+    centered_text("[Enter] Play Again", footer_y, 18.0, LIGHTGRAY);
+    centered_text("[Q] Quit", footer_y + 20.0, 18.0, LIGHTGRAY);
 }

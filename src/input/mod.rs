@@ -1,28 +1,48 @@
 use macroquad::prelude::*;
 
 use crate::game::{Direction, Game};
+use crate::persist::MAX_NAME_LEN;
 
 pub enum InputAction {
     None,
     Quit,
     Start,
     ToggleMode,
+    ToggleSound,
     Pause,
     Resume,
     PlayAgain,
 }
 
-pub fn handle_start_menu() -> InputAction {
+pub fn handle_start_menu(player_name: &mut String) -> InputAction {
     if quit_pressed() {
         return InputAction::Quit;
     }
-    if is_key_pressed(KeyCode::Enter) {
+    if is_key_pressed(KeyCode::Enter) && !player_name.trim().is_empty() {
         return InputAction::Start;
     }
     if is_key_pressed(KeyCode::M) {
         return InputAction::ToggleMode;
     }
+    if is_key_pressed(KeyCode::T) {
+        return InputAction::ToggleSound;
+    }
+    handle_name_typing(player_name);
     InputAction::None
+}
+
+pub fn handle_name_typing(name: &mut String) {
+    if is_key_pressed(KeyCode::Backspace) {
+        name.pop();
+        return;
+    }
+
+    if let Some(ch) = get_char_pressed()
+        && (ch.is_ascii_alphanumeric() || ch == '_' || ch == '-' || ch == ' ')
+        && name.chars().count() < MAX_NAME_LEN
+    {
+        name.push(ch);
+    }
 }
 
 pub fn handle_countdown() -> InputAction {
@@ -52,6 +72,9 @@ pub fn handle_paused() -> InputAction {
     }
     if is_key_pressed(KeyCode::P) {
         return InputAction::Resume;
+    }
+    if is_key_pressed(KeyCode::T) {
+        return InputAction::ToggleSound;
     }
     InputAction::None
 }

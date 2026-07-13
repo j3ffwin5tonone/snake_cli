@@ -17,7 +17,10 @@ impl Sounds {
         }
     }
 
-    pub fn play_eat(&self) {
+    pub fn play_eat(&self, enabled: bool) {
+        if !enabled {
+            return;
+        }
         play_sound(
             &self.eat,
             PlaySoundParams {
@@ -27,7 +30,10 @@ impl Sounds {
         );
     }
 
-    pub fn play_game_over(&self) {
+    pub fn play_game_over(&self, enabled: bool) {
+        if !enabled {
+            return;
+        }
         play_sound(
             &self.game_over,
             PlaySoundParams {

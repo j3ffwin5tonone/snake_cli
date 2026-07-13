@@ -6,7 +6,7 @@ use crate::input::{
     InputAction, handle_countdown, handle_game_over, handle_paused, handle_playing,
     handle_start_menu,
 };
-use crate::persist::Leaderboard;
+use crate::persist::{Leaderboard, load_sound_enabled, save_sound_enabled};
 use crate::render::{
     VisualState, draw_countdown, draw_game_over, draw_paused, draw_playing, draw_start_menu,
 };
@@ -24,8 +24,10 @@ pub enum AppState {
 pub struct App {
     pub state: AppState,
     pub selected_mode: GameMode,
+    pub player_name: String,
     pub leaderboard: Leaderboard,
     pub visuals: VisualState,
+    pub sound_enabled: bool,
     pub sounds: Sounds,
 }
 
@@ -34,9 +36,19 @@ impl App {
         App {
             state: AppState::StartMenu,
             selected_mode: GameMode::Classic,
+            player_name: String::new(),
             leaderboard: Leaderboard::load(),
             visuals: VisualState::default(),
+            sound_enabled: load_sound_enabled(),
             sounds,
+        }
+    }
+
+    fn toggle_sound(&mut self) {
+        self.sound_enabled = !self.sound_enabled;
+        save_sound_enabled(self.sound_enabled);
+        if self.sound_enabled {
+            self.sounds.play_eat(true);
         }
     }
 
@@ -59,7 +71,14 @@ impl App {
 
     pub fn draw(&self) {
         match &self.state {
-            AppState::StartMenu => draw_start_menu(self.selected_mode, &self.leaderboard),
+            AppState::StartMenu => {
+                draw_start_menu(
+                    self.selected_mode,
+                    &self.leaderboard,
+                    &self.player_name,
+                    self.sound_enabled,
+                );
+            }
             AppState::Countdown { remaining, .. } => draw_countdown(*remaining),
             AppState::Playing { game, tick_elapsed } => {
                 let alpha = (*tick_elapsed / game.tick_seconds()).min(1.0);
@@ -67,7 +86,7 @@ impl App {
             }
             AppState::Paused { game, tick_elapsed } => {
                 let alpha = (*tick_elapsed / game.tick_seconds()).min(1.0);
-                draw_paused(game, &self.visuals, alpha, self.leaderboard.top_score());
+                draw_paused(game, &self.visuals, alpha, self.leaderboard.top_score(), self.sound_enabled);
             }
             AppState::GameOver {
                 game,
@@ -79,13 +98,14 @@ impl App {
     }
 
     fn update_start_menu(&mut self) -> bool {
-        match handle_start_menu() {
+        match handle_start_menu(&mut self.player_name) {
             InputAction::Quit => return false,
             InputAction::Start => {
                 self.start_countdown();
                 return true;
             }
             InputAction::ToggleMode => self.selected_mode = self.selected_mode.toggle(),
+            InputAction::ToggleSound => self.toggle_sound(),
             _ => {}
         }
         self.state = AppState::StartMenu;
@@ -125,8 +145,10 @@ impl App {
             match game.update() {
                 UpdateResult::Died => {
                     self.visuals.trigger_death();
-                    self.sounds.play_game_over();
-                    let is_new_record = self.leaderboard.add_score(game.score);
+                    self.sounds.play_game_over(self.sound_enabled);
+                    let is_new_record = self
+                        .leaderboard
+                        .add_score(game.score, &self.player_name);
                     self.state = AppState::GameOver {
                         game,
                         is_new_record,
@@ -135,7 +157,7 @@ impl App {
                 }
                 UpdateResult::Ate => {
                     self.visuals.trigger_eat();
-                    self.sounds.play_eat();
+                    self.sounds.play_eat(self.sound_enabled);
                 }
                 _ => {}
             }
@@ -150,6 +172,10 @@ impl App {
             InputAction::Quit => return false,
             InputAction::Resume => {
                 self.state = AppState::Playing { game, tick_elapsed };
+            }
+            InputAction::ToggleSound => {
+                self.toggle_sound();
+                self.state = AppState::Paused { game, tick_elapsed };
             }
             _ => {
                 self.state = AppState::Paused { game, tick_elapsed };
