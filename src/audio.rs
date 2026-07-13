@@ -3,6 +3,7 @@ use macroquad::audio::{PlaySoundParams, Sound, load_sound_from_bytes, play_sound
 pub struct Sounds {
     eat: Sound,
     game_over: Sound,
+    level_up: Sound,
 }
 
 impl Sounds {
@@ -14,6 +15,9 @@ impl Sounds {
             game_over: load_sound_from_bytes(&generate_beep_wav(220.0, 0.35, 22050))
                 .await
                 .expect("game over sound"),
+            level_up: load_sound_from_bytes(&generate_beep_wav(1320.0, 0.15, 22050))
+                .await
+                .expect("level up sound"),
         }
     }
 
@@ -39,6 +43,19 @@ impl Sounds {
             PlaySoundParams {
                 looped: false,
                 volume: 0.6,
+            },
+        );
+    }
+
+    pub fn play_level_up(&self, enabled: bool) {
+        if !enabled {
+            return;
+        }
+        play_sound(
+            &self.level_up,
+            PlaySoundParams {
+                looped: false,
+                volume: 0.55,
             },
         );
     }

@@ -4,6 +4,7 @@ mod game;
 mod input;
 mod persist;
 mod render;
+mod session;
 
 use macroquad::prelude::*;
 

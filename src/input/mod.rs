@@ -8,26 +8,37 @@ pub enum InputAction {
     Quit,
     Start,
     ToggleMode,
+    TogglePreset,
     ToggleSound,
     Pause,
     Resume,
     PlayAgain,
 }
 
-pub fn handle_start_menu(player_name: &mut String) -> InputAction {
+pub fn handle_start_menu(player_name: &mut String, name_editing: &mut bool) -> InputAction {
     if quit_pressed() {
         return InputAction::Quit;
     }
     if is_key_pressed(KeyCode::Enter) && !player_name.trim().is_empty() {
+        *name_editing = false;
         return InputAction::Start;
+    }
+    if is_key_pressed(KeyCode::Tab) {
+        *name_editing = !*name_editing;
+        return InputAction::None;
     }
     if is_key_pressed(KeyCode::M) {
         return InputAction::ToggleMode;
     }
+    if is_key_pressed(KeyCode::B) {
+        return InputAction::TogglePreset;
+    }
     if is_key_pressed(KeyCode::T) {
         return InputAction::ToggleSound;
     }
-    handle_name_typing(player_name);
+    if *name_editing {
+        handle_name_typing(player_name);
+    }
     InputAction::None
 }
 
@@ -61,7 +72,7 @@ pub fn handle_playing(game: &mut Game) -> InputAction {
         return InputAction::Pause;
     }
     if let Some(dir) = steering_pressed() {
-        game.snake.change_direction(dir);
+        game.queue_turn(dir);
     }
     InputAction::None
 }
