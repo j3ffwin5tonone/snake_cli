@@ -2,44 +2,44 @@ use macroquad::prelude::*;
 
 use crate::game::Game;
 
-use super::MARGIN;
+use super::{CRT_AMBER, CRT_CYAN, CRT_GREEN, CRT_GREEN_MID, MARGIN, glow_text};
 
 pub fn draw_hud(game: &Game, top_score: u16, shake_x: f32) {
     let header = format!(
-        "Score: {}  Level: {}  High: {}",
+        "SCORE {:04}  LVL {:02}  HI {:04}",
         game.score,
         game.level(),
         top_score.max(game.score)
     );
-    draw_text(&header, MARGIN + shake_x, MARGIN + 24.0, 28.0, WHITE);
+    glow_text(&header, MARGIN + shake_x, MARGIN + 24.0, 26.0, CRT_GREEN);
 
-    let mode_label = format!("Mode: {}", game.mode.label());
+    let mode_label = format!("MODE: {}", game.mode.label().to_uppercase());
     draw_text(
         &mode_label,
         MARGIN + shake_x,
-        MARGIN + 44.0,
-        18.0,
-        LIGHTGRAY,
+        MARGIN + 46.0,
+        17.0,
+        CRT_GREEN_MID,
     );
 
     if game.stats.current_streak >= 2 {
-        let streak = format!("Streak: x{}", game.stats.current_streak);
-        draw_text(
+        let streak = format!("STREAK x{}", game.stats.current_streak);
+        glow_text(
             &streak,
             MARGIN + shake_x + 280.0,
-            MARGIN + 44.0,
-            18.0,
-            Color::from_rgba(255, 200, 80, 255),
+            MARGIN + 46.0,
+            17.0,
+            CRT_AMBER,
         );
     }
 
     if game.speed_boost_ticks_remaining > 0 {
-        draw_text(
+        glow_text(
             "BOOST!",
-            MARGIN + shake_x + 400.0,
-            MARGIN + 44.0,
-            18.0,
-            Color::from_rgba(70, 180, 255, 255),
+            MARGIN + shake_x + 420.0,
+            MARGIN + 46.0,
+            17.0,
+            CRT_CYAN,
         );
     }
 }

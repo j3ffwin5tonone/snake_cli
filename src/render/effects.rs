@@ -52,7 +52,12 @@ impl VisualState {
 
 pub fn draw_level_up(timer: f32) {
     let alpha = (timer / 0.8).min(1.0);
-    let overlay = Color::from_rgba(255, 215, 0, (alpha * 60.0) as u8);
+    let overlay = Color::new(
+        super::CRT_AMBER.r,
+        super::CRT_AMBER.g,
+        super::CRT_AMBER.b,
+        alpha * 0.12,
+    );
     draw_rectangle(
         0.0,
         0.0,
@@ -60,11 +65,11 @@ pub fn draw_level_up(timer: f32) {
         super::WINDOW_HEIGHT as f32,
         overlay,
     );
-    super::centered_text(
-        "LEVEL UP!",
+    super::centered_glow_text(
+        "LEVEL UP",
         super::WINDOW_HEIGHT as f32 / 2.0 - 20.0,
-        48.0,
-        Color::from_rgba(255, 215, 0, 255),
+        44.0,
+        super::CRT_AMBER,
     );
 }
 
@@ -75,14 +80,24 @@ pub fn draw_eat_flash(board_x: f32, board_y: f32, board_w: f32, board_h: f32, fl
             board_y,
             board_w,
             board_h,
-            Color::from_rgba(255, 255, 200, (flash * 80.0) as u8),
+            Color::new(
+                super::CRT_GREEN.r,
+                super::CRT_GREEN.g,
+                super::CRT_GREEN.b,
+                flash * 0.12,
+            ),
         );
     }
 }
 
 pub fn draw_level_up_edge(board_x: f32, board_y: f32, board_w: f32, board_h: f32, flash: f32) {
     if flash > 0.0 {
-        let c = Color::from_rgba(255, 215, 0, (flash * 200.0) as u8);
-        draw_rectangle_lines(board_x, board_y, board_w, board_h, 4.0, c);
+        let c = Color::new(
+            super::CRT_AMBER.r,
+            super::CRT_AMBER.g,
+            super::CRT_AMBER.b,
+            flash * 0.8,
+        );
+        draw_rectangle_lines(board_x, board_y, board_w, board_h, 3.0, c);
     }
 }

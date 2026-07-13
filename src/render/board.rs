@@ -3,7 +3,10 @@ use macroquad::prelude::*;
 use crate::game::{FoodKind, Game};
 
 use super::effects::{draw_eat_flash, draw_level_up_edge};
-use super::{board_offset, cell_size_for, centered_text};
+use super::{
+    CRT_AMBER, CRT_BOARD_BG, CRT_CYAN, CRT_GREEN, CRT_GREEN_BODY, CRT_GREEN_DIM, board_offset,
+    cell_size_for, centered_glow_text,
+};
 
 pub fn draw_playing(game: &Game, visuals: &super::VisualState, tick_alpha: f32, top_score: u16) {
     let shake_x = visuals.shake_offset();
@@ -12,17 +15,11 @@ pub fn draw_playing(game: &Game, visuals: &super::VisualState, tick_alpha: f32, 
     let board_w = game.config.board_width as f32 * cell_size;
     let board_h = game.config.board_height as f32 * cell_size;
 
-    clear_background(Color::from_rgba(18, 18, 24, 255));
+    clear_background(super::CRT_BG);
 
     super::hud::draw_hud(game, top_score, shake_x);
 
-    draw_rectangle(
-        board_x + shake_x,
-        board_y,
-        board_w,
-        board_h,
-        Color::from_rgba(30, 30, 40, 255),
-    );
+    draw_rectangle(board_x + shake_x, board_y, board_w, board_h, CRT_BOARD_BG);
 
     for x in 0..=game.config.board_width {
         let px = board_x + shake_x + x as f32 * cell_size;
@@ -32,7 +29,7 @@ pub fn draw_playing(game: &Game, visuals: &super::VisualState, tick_alpha: f32, 
             px,
             board_y + board_h,
             1.0,
-            Color::from_rgba(45, 45, 58, 255),
+            Color::new(CRT_GREEN_DIM.r, CRT_GREEN_DIM.g, CRT_GREEN_DIM.b, 0.5),
         );
     }
     for y in 0..=game.config.board_height {
@@ -43,7 +40,7 @@ pub fn draw_playing(game: &Game, visuals: &super::VisualState, tick_alpha: f32, 
             board_x + shake_x + board_w,
             py,
             1.0,
-            Color::from_rgba(45, 45, 58, 255),
+            Color::new(CRT_GREEN_DIM.r, CRT_GREEN_DIM.g, CRT_GREEN_DIM.b, 0.5),
         );
     }
 
@@ -52,8 +49,8 @@ pub fn draw_playing(game: &Game, visuals: &super::VisualState, tick_alpha: f32, 
         board_y,
         board_w,
         board_h,
-        2.0,
-        Color::from_rgba(80, 80, 100, 255),
+        1.0,
+        CRT_GREEN_DIM,
     );
 
     draw_eat_flash(
@@ -86,20 +83,22 @@ pub fn draw_playing(game: &Game, visuals: &super::VisualState, tick_alpha: f32, 
     {
         let popup = format!("+{}", ate.points);
         let popup_color = match ate.kind {
-            FoodKind::Golden => Color::from_rgba(255, 215, 0, 255),
-            FoodKind::SpeedBoost => Color::from_rgba(100, 200, 255, 255),
-            FoodKind::Normal => Color::from_rgba(255, 255, 100, 255),
+            FoodKind::Golden => CRT_GREEN,
+            FoodKind::SpeedBoost => CRT_CYAN,
+            FoodKind::Normal => CRT_AMBER,
         };
-        centered_text(&popup, board_y + board_h / 2.0, 24.0, popup_color);
+        centered_glow_text(&popup, board_y + board_h / 2.0, 24.0, popup_color);
         if ate.streak >= 2 {
-            centered_text(
+            centered_glow_text(
                 &format!("x{} streak!", ate.streak),
                 board_y + board_h / 2.0 + 28.0,
                 16.0,
-                Color::from_rgba(255, 180, 80, 255),
+                CRT_AMBER,
             );
         }
     }
+
+    super::draw_crt_overlay();
 }
 
 fn cell_to_pixel(board_x: f32, board_y: f32, x: f32, y: f32, cell_size: f32) -> (f32, f32) {
@@ -127,10 +126,17 @@ fn draw_food(game: &Game, board_x: f32, board_y: f32, cell_size: f32) {
         cell_size,
     );
     let color = match game.food.kind {
-        FoodKind::Normal => Color::from_rgba(230, 70, 70, 255),
-        FoodKind::Golden => Color::from_rgba(255, 215, 0, 255),
-        FoodKind::SpeedBoost => Color::from_rgba(70, 180, 255, 255),
+        FoodKind::Normal => CRT_AMBER,
+        FoodKind::Golden => CRT_GREEN,
+        FoodKind::SpeedBoost => CRT_CYAN,
     };
+    draw_rectangle(
+        fx - pulse,
+        fy - pulse,
+        cell_size + pulse * 2.0,
+        cell_size + pulse * 2.0,
+        Color::new(color.r, color.g, color.b, 0.15),
+    );
     draw_rectangle(
         fx + 3.0 - pulse / 2.0,
         fy + 3.0 - pulse / 2.0,
@@ -155,11 +161,17 @@ fn draw_snake(
         let (px, py) = cell_to_pixel(board_x, board_y, cx, cy, cell_size);
         let inset = 2.0;
         let size = cell_size - inset * 2.0;
-        let color = if current == head {
-            Color::from_rgba(120, 230, 120, 255)
+        if current == head {
+            draw_rectangle(
+                px + inset - 2.0,
+                py + inset - 2.0,
+                size + 4.0,
+                size + 4.0,
+                Color::new(CRT_GREEN.r, CRT_GREEN.g, CRT_GREEN.b, 0.2),
+            );
+            draw_rectangle(px + inset, py + inset, size, size, CRT_GREEN);
         } else {
-            Color::from_rgba(70, 180, 70, 255)
-        };
-        draw_rectangle(px + inset, py + inset, size, size, color);
+            draw_rectangle(px + inset, py + inset, size, size, CRT_GREEN_BODY);
+        }
     }
 }
