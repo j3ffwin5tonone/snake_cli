@@ -1,6 +1,12 @@
 # Snake
 
-A windowed Snake game built with Rust and [macroquad](https://github.com/not-fl3/macroquad).
+A windowed Snake game built with Rust and [macroquad](https://github.com/not-fl3/macroquad). The UI uses a **CRT Phosphor Terminal** look — dark green/amber palette, glow text, scanlines, and terminal-style menus.
+
+## Screenshots
+
+| Start menu | Gameplay / HUD |
+|------------|----------------|
+| ![Start menu](assets/start-menu.png) | ![Gameplay HUD](assets/playing-hud.png) |
 
 ## Features
 
