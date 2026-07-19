@@ -1,2 +1,6 @@
 /target
+/dist
 .DS_Store
+.snake_cli_achievements
+.snake_cli_leaderboard
+.snake_cli_settings

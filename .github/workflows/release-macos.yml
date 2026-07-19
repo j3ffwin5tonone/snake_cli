@@ -1,0 +1,51 @@
+name: Release macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to upload assets to
+        required: true
+        default: v0.2.0
+
+permissions:
+  contents: write
+
+jobs:
+  macos-aarch64:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#v}"
+          BIN="target/release/snake_cli"
+          OUT_BIN="snake_cli-${VERSION}-macos-aarch64"
+          OUT_ZIP="snake_cli-${VERSION}-macos-aarch64.zip"
+          chmod +x "$BIN"
+          cp "$BIN" "$OUT_BIN"
+          ditto -c -k --sequesterRsrc --keepParent "$OUT_BIN" "$OUT_ZIP"
+          ls -lh "$OUT_BIN" "$OUT_ZIP"
+          file "$OUT_BIN"
+
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#v}"
+          gh release upload "$TAG" \
+            "snake_cli-${VERSION}-macos-aarch64" \
+            "snake_cli-${VERSION}-macos-aarch64.zip" \
+            --clobber
